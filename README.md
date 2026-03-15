@@ -19,4 +19,5 @@ Egal ob du aus Versehen ein Skript in ioBroker gelöscht hast oder dein System z
 Kopiere den folgenden Befehl in die Konsole deines Linux-Systems (z. B. Raspberry Pi oder dein ioBroker-Server):
 
 ```bash
-curl -sSL [https://raw.githubusercontent.com/ipod86/IoBroker_Script_Restore/main/script_restore.sh](https://raw.githubusercontent.com/ipod86/IoBroker_Script_Restore/main/script_restore.sh) -o script_restore.sh && chmod +x script_restore.sh && ./script_restore.sh
+curl -sSL https://raw.githubusercontent.com/ipod86/Script-Restore/main/setup.sh -o setup.sh && chmod +x setup.sh && ./setup.sh
+```
