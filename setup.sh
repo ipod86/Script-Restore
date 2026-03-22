@@ -42,9 +42,13 @@ cat <<EOF > app.py
 import os
 import tarfile
 import json
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 
 app = Flask(__name__)
+app.secret_key = 'scriptrestore-key-2024'
+app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
+
+PASSWORD = "dagrae"
 
 def process_item(key, val, scripts_list):
     key_str = str(key)
@@ -106,8 +110,53 @@ def parse_file_obj(file_obj, filename):
         
     return scripts
 
+LOGIN_HTML = """<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - ioBroker Script Restore</title>
+    <style>
+        body{display:flex;align-items:center;justify-content:center;height:100vh;margin:0;font-family:system-ui,sans-serif;background:#212529;}
+        .box{background:#fff;border-radius:8px;padding:2rem;width:320px;box-shadow:0 4px 24px rgba(0,0,0,0.4);}
+        h2{margin:0 0 1.5rem;color:#212529;font-size:1.25rem;text-align:center;}
+        input[type=password]{width:100%;padding:.5rem .75rem;border:1px solid #ced4da;border-radius:4px;font-size:1rem;box-sizing:border-box;margin-bottom:1rem;}
+        button{width:100%;padding:.5rem;background:#0d6efd;color:#fff;border:none;border-radius:4px;font-size:1rem;font-weight:bold;cursor:pointer;}
+        button:hover{background:#0b5ed7;}
+        .error{color:#dc3545;font-size:.875rem;margin-bottom:1rem;text-align:center;}
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>ioBroker Script Restore</h2>
+        {error}
+        <form method="POST">
+            <input type="password" name="password" placeholder="Passwort" autofocus required>
+            <button type="submit">Anmelden</button>
+        </form>
+    </div>
+</body>
+</html>"""
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    error = ''
+    if request.method == 'POST':
+        if request.form.get('password') == PASSWORD:
+            session['auth'] = True
+            return redirect('/')
+        error = '<p class="error">Falsches Passwort</p>'
+    return LOGIN_HTML.replace('{error}', error)
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect('/login')
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    if not session.get('auth'):
+        return redirect('/login')
     if request.method == 'POST':
         scripts = []
         if 'backup' in request.files:
@@ -334,6 +383,7 @@ cat <<EOF > templates/index.html
             <input type="file" name="backup" required accept=".tar,.gz,.jsonl,.json">
             <button type="submit">Backup Laden</button>
         </form>
+        <a href="/logout" style="color:#adb5bd;font-size:0.875rem;text-decoration:none;margin-left:1rem;white-space:nowrap;">Abmelden</a>
     </nav>
 
     <div class="main-container">
